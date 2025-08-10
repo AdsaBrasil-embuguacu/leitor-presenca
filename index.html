@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    
+    <title>Leitor de Presença</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #00a8ff;
+            --success-color: #00e676;
+            --danger-color: #ff3b30;
+            --warning-color: #ff9500;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #e0e0e0;
+            --text-dark: #ffffff;
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+            overflow: hidden;
+        }
+        .container {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            max-width: 420px;
+            width: 95%;
+            overflow: hidden;
+            text-align: center;
+        }
+        .header {
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        h2 {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .scanner-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* Proporção 1:1 */
+            background: #000;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 0 40vmax rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15%;
+        }
+        .viewfinder {
+            width: 100%;
+            height: 100%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .scan-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+            box-shadow: 0 0 10px var(--primary-color);
+            animation: scan 3s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: calc(100% - 3px); }
+            100% { top: 0; }
+        }
+        .footer {
+            padding: 20px;
+        }
+        .status-box {
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .status-initial { background: rgba(0, 168, 255, 0.2); color: var(--primary-color); }
+        .status-processing { background: rgba(255, 149, 0, 0.2); color: var(--warning-color); }
+        .status-success { background: rgba(0, 230, 118, 0.2); color: var(--success-color); }
+        .status-error { background: rgba(255, 59, 48, 0.2); color: var(--danger-color); }
+        
+        button {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .btn-primary { 
+            background-color: var(--primary-color); 
+            color: #111; 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 4px 20px rgba(0, 168, 255, 0.3); 
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .modal-content h3 { 
+            font-size: 1.4em; 
+            margin-bottom: 10px; 
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .modal-content p { 
+            font-size: 1.1em; 
+            color: var(--text-color); 
+            margin-bottom: 25px; 
+            line-height: 1.6;
+        }
+        .modal-buttons { display: flex; gap: 10px; }
+        .btn-secondary { 
+            background: var(--glass-bg); 
+            color: var(--text-dark); 
+            border: 1px solid var(--glass-border); 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2><i class='bx bx-qr-scan'></i> Leitor de Presença</h2>
+        </div>
+        
+        <div class="scanner-wrapper">
+            <video id="video" autoplay playsinline></video>
+            <div class="scanner-overlay">
+                <div class="viewfinder">
+                    <div class="scan-line"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div id="statusBox" class="status-box status-initial">Aponte a câmera para o QR Code</div>
+            <button id="resetButton" class="btn-primary" style="display:none;" onclick="resetScanner()">Ler Próximo QR Code</button>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3><i class='bx bx-check-shield'></i> Confirmar Presença?</h3>
+            <p id="confirmDetails"></p>
+            <div class="modal-buttons">
+                <button id="cancelButton" class="btn-secondary">Cancelar</button>
+                <button id="confirmButton" class="btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvas = canvasElement.getContext('2d');
+        const statusBox = document.getElementById('statusBox');
+        const resetButton = document.getElementById('resetButton');
+        const confirmModal = document.getElementById('confirmModal');
+        const confirmDetails = document.getElementById('confirmDetails');
+        const confirmButton = document.getElementById('confirmButton');
+        const cancelButton = document.getElementById('cancelButton');
+        
+        let stream;
+        let animationFrameId;
+
+        // Função para iniciar a câmera
+        async function startCamera() {
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                video.addEventListener('loadedmetadata', () => {
+                    resetScanner();
+                });
+            } catch (err) {
+                updateStatus('error', `Erro ao acessar câmera: ${err.message}`);
+            }
+        }
+
+        // Função principal que lê o frame do vídeo
+        function tick() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasElement.height = video.videoHeight;
+                canvasElement.width = video.videoWidth;
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+
+                if (code) {
+                    handleQRCode(code.data);
+                    return; // Para o loop
+                }
+            }
+            animationFrameId = requestAnimationFrame(tick);
+        }
+
+        // Lida com o QR Code encontrado
+        function handleQRCode(qrData) {
+            video.pause();
+            cancelAnimationFrame(animationFrameId);
+
+            try {
+                const partes = qrData.split("|");
+                if (partes.length === 3) {
+                    const [id, nome, dataStr] = partes;
+                    const dataFormatada = new Date(dataStr + 'T00:00:00').toLocaleDateString('pt-BR');
+                    
+                    confirmDetails.innerHTML = `<strong>Nome:</strong> ${nome}<br><strong>Data:</strong> ${dataFormatada}`;
+                    confirmModal.style.display = 'flex';
+                    
+                    confirmButton.onclick = () => {
+                        confirmModal.style.display = 'none';
+                        processarQRCode(qrData);
+                    };
+                    cancelButton.onclick = () => {
+                        confirmModal.style.display = 'none';
+                        resetScanner();
+                    };
+                } else {
+                    throw new Error("Formato de QR Code inválido.");
+                }
+            } catch(e) {
+                updateStatus('error', 'QR Code inválido ou não reconhecido.');
+                resetButton.style.display = 'block';
+            }
+        }
+
+        // =========================================================
+        //  FUNÇÃO MODIFICADA PARA USAR FETCH
+        // =========================================================
+        function processarQRCode(data) {
+            // !!! IMPORTANTE: COLE A URL DA SUA WEB APP AQUI !!!
+            const webAppUrl = 'https://script.google.com/macros/s/AKfycbzALi__e0yvSflolKjRg7KAcDDcOjx6USOGJZVeBIOWH8OJs5ecQgopJTHS8nTEJiP_/exec';
+
+            updateStatus('processing', 'Validando presença...');
+
+            const body = {
+                action: 'registrarPresenca',
+                data: data
+            };
+
+            fetch(webAppUrl, {
+                method: 'POST',
+                body: JSON.stringify(body),
+                // O modo 'no-cors' pode ser necessário, mas Apps Script geralmente lida bem.
+                // mode: 'no-cors', // Descomente se encontrar erros de CORS
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', // Apps Script prefere text/plain para postData simples
+                },
+            })
+            .then(response => response.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    const message = res.message;
+                    if (message.includes("✅")) {
+                        updateStatus('success', message);
+                    } else { // Trata mensagens de "⚠️" como erro visual
+                        updateStatus('error', message);
+                    }
+                } else {
+                    // Erros retornados pela lógica do script (ex: Ação desconhecida)
+                    updateStatus('error', `Erro na validação: ${res.message}`);
+                }
+                resetButton.style.display = 'block';
+            })
+            .catch(error => {
+                // Erros de rede (ex: sem internet, URL errada)
+                updateStatus('error', `Erro de comunicação: ${error.message}`);
+                resetButton.style.display = 'block';
+            });
+        }
+
+        // Atualiza a caixa de status visualmente
+        function updateStatus(type, message) {
+            statusBox.className = 'status-box'; // Reseta as classes
+            statusBox.classList.add(`status-${type}`);
+            statusBox.innerHTML = `<strong>${message}</strong>`;
+        }
+
+        // Reseta o leitor para uma nova leitura
+        function resetScanner() {
+            video.play().catch(console.error);
+            updateStatus('initial', 'Aponte a câmera para o QR Code');
+            resetButton.style.display = 'none';
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animationFrameId = requestAnimationFrame(tick);
+        }
+
+        // Inicia tudo
+        startCamera();
+    </script>
+</body>
+</html>
